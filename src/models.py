@@ -2,9 +2,9 @@ import torch
 import torch.nn as nn
 
 class LSTM_model(nn.Module):
-    # in: hour (1-24), day (1-7), week (1-52), year (>0), wind, consumption, temp, normal temp, and spot price at t-1
+    # in: hour, day, week, year, month, day_of_year (sin/cos), wind, consumption, temp, normal temp, temp*consumption, temp_deviation, spot_lag1
     # out: spot price at t
-    def __init__(self, input_size=9, hidden_size=64, num_layers=2, output_size=1):
+    def __init__(self, input_size=14, hidden_size=64, num_layers=2, output_size=1):
         super(LSTM_model, self).__init__()
         
         self.lstm = nn.LSTM(input_size=input_size,
