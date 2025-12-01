@@ -1,0 +1,122 @@
+===============================================================================
+Job ID: 27186941
+Job Name: seq_len_search
+Queue: gpuv100
+Host: n-62-11-13
+Working Directory: /zhome/18/a/187109/projects/CI_for_energy_price_forecasting
+Start Time: Wed Nov 26 17:21:21 CET 2025
+===============================================================================
+
+Creating virtual environment...
+Python: /zhome/18/a/187109/projects/CI_for_energy_price_forecasting/venv/bin/python
+Python version: Python 3.11.9
+
+Installing dependencies...
+
+PyTorch version: 2.5.1+cu121
+CUDA available: True
+CUDA device: Tesla V100-PCIE-32GB
+
+===============================================================================
+Starting sequence length search...
+===============================================================================
+
+Using GPU: Tesla V100-PCIE-32GB
+
+===============================================================================
+End Time: Wed Nov 26 18:26:31 CET 2025
+===============================================================================
+
+------------------------------------------------------------
+Sender: LSF System <lsfadmin@hpc.dtu.dk>
+Subject: Job 27186941: <seq_len_search> in cluster <dcc> Done
+
+Job <seq_len_search> was submitted from host <hpclogin1> by user <s224766> in cluster <dcc> at Wed Nov 26 17:16:14 2025
+Job was executed on host(s) <4*n-62-11-13>, in queue <gpuv100>, as user <s224766> in cluster <dcc> at Wed Nov 26 17:21:18 2025
+</zhome/18/a/187109> was used as the home directory.
+</zhome/18/a/187109/projects/CI_for_energy_price_forecasting> was used as the working directory.
+Started at Wed Nov 26 17:21:18 2025
+Terminated at Wed Nov 26 18:26:31 2025
+Results reported at Wed Nov 26 18:26:31 2025
+
+Your job looked like:
+
+------------------------------------------------------------
+# LSBATCH: User input
+#!/bin/bash
+#===============================================================================
+# Sequence Length Hyperparameter Search - DTU HPC Job Script
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# BSUB Resource Requests
+#-------------------------------------------------------------------------------
+#BSUB -q gpuv100
+#BSUB -J seq_len_search
+#BSUB -n 4
+#BSUB -gpu "num=1:mode=exclusive_process"
+#BSUB -W 8:00
+#BSUB -R "rusage[mem=16GB]"
+#BSUB -R "span[hosts=1]"
+#BSUB -o seq_len_search_%J.out
+#BSUB -e seq_len_search_%J.err
+
+#-------------------------------------------------------------------------------
+# Environment Setup
+#-------------------------------------------------------------------------------
+unset PYTHONHOME
+unset PYTHONPATH
+
+module purge
+module load cuda/12.4
+module load python3/3.11.9
+
+#-------------------------------------------------------------------------------
+# Job Information
+#-------------------------------------------------------------------------------
+echo "==============================================================================="
+echo "Job ID: $LSB_JOBID"
+echo "Job Name: seq_len_search"
+echo "Queue: gpuv100"
+echo "Host: $(hostname)"
+echo "Working Directory: $(pwd)"
+echo "Start Time: $(date)"
+echo "==============================================================================="
+echo ""
+
+#-------------------------------------------------------------------------------
+# Project Setup
+#-------------------------------------------------------------------------------
+PROJECT_DIR="/zhome/18/a/187109/projects/CI_for_energy_price_forecasting"
+cd $PROJECT_DIR
+
+# Create/activate virtual environment
+VENV_DIR="$PROJECT_DIR/venv"
+
+
+(... more ...)
+------------------------------------------------------------
+
+Successfully completed.
+
+Resource usage summary:
+
+    CPU time :                                   3719.01 sec.
+    Max Memory :                                 719 MB
+    Average Memory :                             662.70 MB
+    Total Requested Memory :                     65536.00 MB
+    Delta Memory :                               64817.00 MB
+    Max Swap :                                   -
+    Max Processes :                              6
+    Max Threads :                                8
+    Run time :                                   3915 sec.
+    Turnaround time :                            4217 sec.
+
+The output (if any) is above this job summary.
+
+
+
+PS:
+
+Read file <seq_len_search_27186941.err> for stderr output of this job.
+
