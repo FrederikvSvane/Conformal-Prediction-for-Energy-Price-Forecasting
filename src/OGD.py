@@ -44,12 +44,16 @@ class OGD_Predictor:
 
 # Inhereted class of OGD_Predictor, which just makes it own _compute_update_term and uses the parent class's update and get_interval
 class ECI_Predictor(OGD_Predictor):
-    def __init__(self, alpha=0.1, eta=0.5, q_init=1.0, c=1.0, version='basic', 
+    def __init__(self, alpha=0.1, eta=0.5, q_init=1.0, c=1.0, window_length=50, h=1, version='basic', 
                 eq_function='sigmoid'):
         super().__init__(alpha, eta, q_init)
         self.c = c
         self.version = version
         self.eq_function = eq_function  # 'sigmoid' or 'gaussian'
+        #Cutoff-specific parameters
+        self.score_history = []
+        self.window_length = window_length
+        self.h = h
 
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-self.c * x))
@@ -69,11 +73,11 @@ class ECI_Predictor(OGD_Predictor):
             return self._gaussian(x)
         else:
             return self._sigmoid(x)
-    1
+    
     def _grad_f(self, x):
         if self.eq_function == 'gaussian':
             return self._gaussian_grad(x)
-        else:
+        elif self.eq_function == 'sigmoid':
             return self._sigmoid_grad(x)
     
     def basic_update_term(self, y_pred, y_true):
@@ -84,12 +88,42 @@ class ECI_Predictor(OGD_Predictor):
         diff = score - self.q
         
         return err_t - self.alpha + diff * self._grad_f(diff)
+    
+    def cutoff_update_term(self, y_pred, y_true):
+        score = abs(y_true - y_pred)
+        
+        # Store score in history
+        self.score_history.append(score)
+        
+        # Keep only recent scores to save memory
+        if len(self.score_history) > self.window_length * 2:
+            self.score_history = self.score_history[-self.window_length:]
+        
+        err_t = 1 if score > self.q else 0
+        
+        if len(self.score_history) >= self.window_length:
+            recent_scores = self.score_history[-self.window_length:]
+        else:
+            recent_scores = self.score_history
+        
+        # h_t = h * (max - min) of recent scores
+        h_t = self.h * (max(recent_scores) - min(recent_scores))
+        
+        diff = score - self.q
+        
+        # Only apply EQ term if |diff| > h_t
+        if abs(diff) > h_t:
+            eq_term = diff * self._grad_f(diff)
+        else:
+            eq_term = 0
+        
+        return err_t - self.alpha + eq_term
 
     def _compute_update_term(self, y_pred, y_true):
         if self.version == 'integral':
             return None
         elif self.version == 'cutoff':
-            return None
+            return self.cutoff_update_term(y_pred, y_true)
         else:  # Basic version
             return self.basic_update_term(y_pred, y_true)
         
