@@ -45,11 +45,10 @@ class OGD_Predictor:
 # Inhereted class of OGD_Predictor, which just makes it own _compute_update_term and uses the parent class's update and get_interval
 class ECI_Predictor(OGD_Predictor):
     def __init__(self, alpha=0.1, eta=0.5, q_init=1.0, c=1.0, version='basic', 
-                 window_length=100, eq_function='sigmoid'):
+                eq_function='sigmoid'):
         super().__init__(alpha, eta, q_init)
         self.c = c
         self.version = version
-        self.window_length = window_length
         self.eq_function = eq_function  # 'sigmoid' or 'gaussian'
 
     def _sigmoid(self, x):
