@@ -70,7 +70,7 @@ class ECI_Predictor(OGD_Predictor):
             return self._gaussian(x)
         else:
             return self._sigmoid(x)
-    
+    1
     def _grad_f(self, x):
         if self.eq_function == 'gaussian':
             return self._gaussian_grad(x)
@@ -79,12 +79,8 @@ class ECI_Predictor(OGD_Predictor):
     
     def basic_update_term(self, y_pred, y_true):
         score = abs(y_true - y_pred)
-        covered = (score <= self.q)
-
-        if covered:
-            err_t = self.alpha - (self.q - score) / self.q
-        else:
-            err_t = 1
+        
+        err_t = 1 if score > self.q else 0
 
         diff = score - self.q
         
