@@ -55,8 +55,8 @@ class ECI_Predictor(OGD_Predictor):
         self.window_length = window_length
         self.h = h
         # Integral-specific parameters
-        self.error_history = []  # MISSING! Need to initialize this
-        self.gamma = gamma  # Decay factor for weights
+        self.error_history = []
+        self.gamma = gamma
 
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-self.c * x))
@@ -95,12 +95,7 @@ class ECI_Predictor(OGD_Predictor):
     def cutoff_update_term(self, y_pred, y_true):
         score = abs(y_true - y_pred)
         
-        # Store score in history
         self.score_history.append(score)
-        
-        # Keep only recent scores to save memory
-        if len(self.score_history) > self.window_length * 2:
-            self.score_history = self.score_history[-self.window_length:]
         
         err_t = 1 if score > self.q else 0
         
@@ -139,13 +134,11 @@ class ECI_Predictor(OGD_Predictor):
         
         t = len(self.error_history)
         
-        # Compute weights: w_i = 0.95^(t-i) / Σ 0.95^(t-j)
         gamma = 0.95  # Decay factor
         raw_weights = [gamma ** (t - i) for i in range(1, t + 1)]
         weight_sum = sum(raw_weights)
         weights = [w / weight_sum for w in raw_weights]
         
-        # Compute weighted sum of all past update terms
         total_update = 0.0
         for i, (w_i, past) in enumerate(zip(weights, self.error_history)):
             err_i = past['err']
@@ -153,10 +146,8 @@ class ECI_Predictor(OGD_Predictor):
             q_i = past['q']
             diff_i = s_i - q_i
             
-            # Update term for timestep i
             update_i = err_i - self.alpha + diff_i * self._grad_f(diff_i)
             
-            # Weight it and add to total
             total_update += w_i * update_i
         
         return total_update
