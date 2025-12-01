@@ -44,7 +44,7 @@ class OGD_Predictor:
 
 # Inhereted class of OGD_Predictor, which just makes it own _compute_update_term and uses the parent class's update and get_interval
 class ECI_Predictor(OGD_Predictor):
-    def __init__(self, alpha=0.1, eta=0.5, q_init=1.0, c=1.0, window_length=50, h=1, version='basic', 
+    def __init__(self, alpha=0.1, eta=0.5, q_init=1.0, c=1.0, window_length=50, h=1, gamma=0.95, version='basic', 
                 eq_function='sigmoid'):
         super().__init__(alpha, eta, q_init)
         self.c = c
@@ -54,6 +54,9 @@ class ECI_Predictor(OGD_Predictor):
         self.score_history = []
         self.window_length = window_length
         self.h = h
+        # Integral-specific parameters
+        self.error_history = []  # MISSING! Need to initialize this
+        self.gamma = gamma  # Decay factor for weights
 
     def _sigmoid(self, x):
         return 1 / (1 + np.exp(-self.c * x))
@@ -119,9 +122,48 @@ class ECI_Predictor(OGD_Predictor):
         
         return err_t - self.alpha + eq_term
 
+    def integral_update_term(self, y_pred, y_true):
+        """
+        ECI-integral: Integrate errors over all past timesteps
+        with exponentially increasing weights for recent errors
+        """
+        score = abs(y_true - y_pred)
+        
+        # Store current observation
+        self.score_history.append(score)
+        self.error_history.append({
+            'score': score,
+            'q': self.q,
+            'err': 1 if score > self.q else 0
+        })
+        
+        t = len(self.error_history)
+        
+        # Compute weights: w_i = 0.95^(t-i) / Σ 0.95^(t-j)
+        gamma = 0.95  # Decay factor
+        raw_weights = [gamma ** (t - i) for i in range(1, t + 1)]
+        weight_sum = sum(raw_weights)
+        weights = [w / weight_sum for w in raw_weights]
+        
+        # Compute weighted sum of all past update terms
+        total_update = 0.0
+        for i, (w_i, past) in enumerate(zip(weights, self.error_history)):
+            err_i = past['err']
+            s_i = past['score']
+            q_i = past['q']
+            diff_i = s_i - q_i
+            
+            # Update term for timestep i
+            update_i = err_i - self.alpha + diff_i * self._grad_f(diff_i)
+            
+            # Weight it and add to total
+            total_update += w_i * update_i
+        
+        return total_update
+
     def _compute_update_term(self, y_pred, y_true):
         if self.version == 'integral':
-            return None
+            return self.integral_update_term(y_pred, y_true)
         elif self.version == 'cutoff':
             return self.cutoff_update_term(y_pred, y_true)
         else:  # Basic version
