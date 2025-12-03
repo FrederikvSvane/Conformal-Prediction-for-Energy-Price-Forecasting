@@ -24,86 +24,146 @@
 \maketitle
 
 \begin{abstract}
-  The abstract should appear at the top of the left-hand column of text, about 0.5 inch (12 mm) below the title area and no more than 3.125 inches (80 mm) in length. Leave a 0.5 inch (12 mm) space between the end of the abstract and the beginning of the main text. The abstract should contain about 100 to 150 words, and should be identical to the abstract text submitted electronically along with the paper cover sheet. All manuscripts must be in English, printed in black ink.
+The abstract should contain about 100 to 150 words summarizing the problem, approach, and key findings.
 \end{abstract}
 
 \section{Introduction}
 \label{sec:intro}
 
-These guidelines include complete descriptions of the fonts, spacing, and related information for producing your proceedings manuscripts.
+Energy price forecasting, like other investment domains, benefits immensely from uncertainty estimates for proper risk management. 
+Conformal prediction is able to provide these prediction intervals, with guaranteed coverage. 
+Setting a miscoverage rate of $\alpha = 0.1$ means we expect 90\% of true values to fall within our intervals. 
+However, standard conformal methods assume exchangeable data, which is violated in time series, where observations are sequentially dependent/inexchangeable.
 
-\section{Formatting your paper}
-\label{sec:format}
+Extensions to standard conformal inference, such as Adaptive Conformal Inference (ACI) and Online Gradient Descent (OGD), 
+have been developed to address this problem of assumed exchangeability, by dynamically adjusting intervals based on binary coverage feedback. 
+Error-Quantified Conformal Inference (ECI) \cite{wu2025eci} extends these methods further, by incorporating the \textit{magnitude} of prediction errors, instead of mere binary miss/cover feedback.
 
-All printed material, including text, illustrations, and charts, must be kept within a print area of 7 inches (178 mm) wide by 9 inches (229 mm) high. Do not write or print anything outside the print area. The top margin must be 1 inch (25 mm), except for the title page, and the left margin must be 0.75 inch (19 mm). All \emph{text} must be in a two-column format. Columns are to be 3.39 inches (86 mm) wide, with a 0.24 inch (6 mm) space between them. Text must be fully justified.
+In this project, we apply these conformal methods to English electricity spot price forecasting using 2022 hourly data with weather and consumption features. 
+We implement two forecasting models, SARIMAX and LSTM, and compare OGD and ECI for constructing prediction intervals. 
+This allows us to explore how online conformal prediction performs on real energy data from the 2022 energy crisis, where the market experienced increased volatility and distribution shifts.
 
-\section{Page title section}
-\label{sec:pagestyle}
 
-The paper title (on the first page) should begin 1.38 inches (35 mm) from the top edge of the page, centered, completely capitalized, and in Times 14-point, boldface type. The authors' name(s) and affiliation(s) appear below the title in capital and lower case letters. Papers with multiple authors and affiliations may require two or more lines for this information.
+\section{Methods}
+\label{sec:methods}
 
-\section{Type-style and fonts}
-\label{sec:typestyle}
+\subsection{Conformal Prediction}
+\label{ssec:conformal}
 
-We strongly encourage you to use Times-Roman font. In addition, this will give the proceedings a more uniform look. Use a font that is no smaller than ten point type throughout the paper, including figure captions.
+Conformal prediction constructs prediction intervals by comparing new observations to a calibration set. Given a point prediction $\hat{y}_t$ and a true value $y_t$, we define a nonconformity score $s_t = |y_t - \hat{y}_t|$ measuring how ''unusual`` the observation is. A prediction interval is then constructed as $[\hat{y}_t - q_t, \hat{y}_t + q_t]$, where $q_t$ is a threshold chosen such that the interval covers the true value with probability $1 - \alpha$.
 
-This is a minimum spacing; 2.75 lines/cm (7 lines/inch) will make the paper much more readable. Larger type sizes require correspondingly larger vertical spacing. Please do not double-space your paper. True-Type 1 fonts are preferred.
+Standard conformal prediction assumes exchangeability: the joint distribution of observations is invariant to permutation. 
+This assumption fails for time series data, where observations are chronologically dependent (ie. the next spot price depends on the current spot price). 
 
-The first paragraph in each section should not be indented, but all the following paragraphs within the section should be indented as these paragraphs demonstrate.
+Additionally, the underlying distribution may shift over time, meaning the statistical properties of prices in summer differ from those during winter, 
+and likewise for crisis periods compared to stable periods. 
+So a calibration set from the past may not represent future conditions, causing coverage guarantees to break down.
 
-\section{Major headings}
-\label{sec:majhead}
+\subsection{Online Conformal Methods}
+\label{ssec:online}
 
-Major headings, for example, "1. Introduction", should appear in all capital letters, bold face if possible, centered in the column, with one blank line before, and one blank line after. Use a period (".") after the heading number, not a colon.
+Online conformal methods address non-exchangeability by updating the threshold $q_t$ dynamically based on observed coverage. The Online Gradient Descent (OGD) method uses the update rule
+\begin{equation}
+    q_{t+1} = q_t + \eta \cdot (\text{err}_t - \alpha)
+\end{equation}
+where $\eta$ is a learning rate and the binary variable $\text{err}_t \in \{0, 1\}$ indicates whether the true value fell outside the interval. When coverage is too low ($\text{err}_t = 1$ more often than $\alpha$), the threshold increases, widening intervals. When coverage is too high, the threshold decreases, tightening intervals.
 
-\subsection{Subheadings}
-\label{ssec:subhead}
+Error-Quantified Conformal Inference (ECI) extends OGD by incorporating the magnitude of prediction errors. The update rule becomes
+\begin{equation}
+    q_{t+1} = q_t + \eta \cdot \left[(\text{err}_t - \alpha) + (s_t - q_t) \cdot f'(s_t - q_t)\right]
+\end{equation}
+where $s_t$ is the nonconformity score and $f$ is a shaping function, such as a sigmoid or a Gaussian kernel. As such, the additional term $(s_t - q_t) \cdot f'(s_t - q_t)$ adjusts the update based on how far the score was from the threshold. 
+The choice of shaping function comes with considerations: the sigmoid saturates for large deviations, giving extreme misses similar corrections to moderate ones. The Gaussian kernel goes further, actively dampening corrections for extreme deviations, treating them as potential outliers that should have less influence on the threshold.
 
-Subheadings should appear in lower case (initial word capitalized) in boldface. They should start at the left margin on a separate line.
+\subsection{Data}
+\label{ssec:data}
 
-\subsubsection{Sub-subheadings}
-\label{sssec:subsubhead}
+We use hourly electricity market data from England spanning February 1, 2022 to February 1, 2023, comprising 8,760 observations. The target variable is the day-ahead spot price (GBP/MWh), while the raw features include wind power forecasts from a wind farm near London (MW), temperature forecasts (°C), historical normal temperatures (°C), and timestamps.
 
-Sub-subheadings, as in this paragraph, are discouraged. However, if you must use them, they should appear in lower case (initial word capitalized) and start at the left margin on a separate line, with paragraph text beginning on the following line. They should be in italics.
+This period coincides with the European energy crisis, characterized by significant price volatility and distribution shifts. These conditions stress-test conformal methods designed for non-stationary environments.
 
-\section{Printing your paper}
-\label{sec:print}
+\subsubsection{Feature engineering}
 
-If the last page of your paper is only partially filled, arrange the columns so that they are evenly balanced if possible, rather than having one long column.
+With only a single year of data, capturing seasonal patterns directly is challenging. To address this, we engineer additional features from the available measurements.
 
-In \LaTeX, to start a new column (but not a new page) and help balance the last-page column lengths, you can use the command \verb|\pagebreak| as demonstrated on this page (see the \LaTeX source below).
+From the timestamp, we derive hour of day (1--24), day of year (1--365), week number (1--52), and month (1--12). To represent annual seasonality without discontinuities, we encode day of year cyclically:
+\begin{equation*}
+  \text{day\_sin} = \sin\left(\frac{2\pi \cdot \text{day}}{365}\right), \quad \text{day\_cos} = \cos\left(\frac{2\pi \cdot \text{day}}{365}\right)
+\end{equation*}
 
-\section{Illustrations, graphs, and photographs}
-\label{sec:illust}
+We also construct features based on energy market dynamics. Following WHO guidelines that recommend a minimum indoor temperature of 18°C \cite{who2018housing}, we define heating demand as $\max(0, 18 - \text{temperature forecast})$. We then multiply this by consumption forecasts, based on the hypothesis that cold weather combined with high demand creates price pressure.
 
-Illustrations must appear within the designated margins. They may span the two columns. If possible, position illustrations at the top of columns, rather than in the middle or at the bottom. Caption and number every illustration.
+Additionally, we compute temperature deviation from historical norms, based on the intuition that unusual weather may drive price volatility.
 
-Since there are many ways, often incompatible, of including images in a \LaTeX document, below is an example of how to do this.
+Finally, we include lagged spot price ($t-1$) as a feature, reflecting the realistic constraint that only past prices are observable at prediction time.
 
-\begin{figure}[htb]
-\fbox{\rule{0pt}{4cm}\rule{0.97\columnwidth}{0pt}}
-\caption{Example of placing a figure with experimental results.}
-\label{fig:res}
-\end{figure}
+This yields 14 input features in total. The data is split 80/20 into training and test sets, preserving temporal order to prevent information leakage.
 
-% To start a new column (but not a new page) and help balance the last-page
-% column length use \vfill\pagebreak.
-% -------------------------------------------------------------------------
-\vfill
-\pagebreak
+\subsection{Forecasting Models}
+\label{ssec:forecasting}
 
-\section{Footnotes}
-\label{sec:foot}
+We use two forecasting models to generate point predictions, representing deep learning and classical time series approaches.
 
-Use footnotes sparingly (or not at all!) and place them at the bottom of the column on the page on which they are referenced. Use Times 9-point type, single-spaced. To help your readers, avoid using footnotes altogether and include necessary peripheral observations in the text (within parentheses, if you prefer, as in this sentence).
+\subsubsection{Deep Learning Model}
 
-\section{References}
-\label{sec:ref}
+Sequential data like this calls for a recurrent architecture. As covered in the lectures, standard feedforward networks treat each input independently, failing to capture positional relationships within a sequence. They also require fixed input dimensions, making them unsuitable for variable-length sequences. Recurrent neural networks (RNNs) address both issues by processing inputs sequentially and maintaining a hidden state that carries information across time steps.
 
-List and number all bibliographical references at the end of the paper. References may be numbered (either alphabetically or in order of appearance) or follow the author–year citation style (e.g., using the \texttt{natbib} package). If you use a numeric style, cite references using square brackets, e.g., \cite{C2}. If you use an author–year style, cite using round brackets.
+However, traditional RNNs suffer from vanishing or exploding gradients. During backpropagation, gradients in early layers are computed via the chain rule, resulting in a product across all time steps:
+\begin{equation*}
+    \frac{\partial \mathcal{L}}{\partial h_0} = \prod_{t=1}^{T} \frac{\partial h_t}{\partial h_{t-1}} \cdot \frac{\partial \mathcal{L}}{\partial h_T}
+\end{equation*}
+For long sequences, this product either explodes or vanishes. If the intermediate gradients are consistently greater than one, the product blows up. If they are consistently smaller than one, it collapses to zero.
+
+LSTMs address this through a gating mechanism, as we saw in lecture. The cell state acts as a highway that allows gradients to flow across many time steps with minimal transformation. The forget gate controls what information to discard, the input gate controls what new information to store, and the output gate controls what to expose to the next layer. These gates use sigmoid activations to produce values in $[0, 1]$, enabling smooth gradient flow during training.
+
+We considered adding attention mechanisms or moving to a full Transformer architecture, but opted against this for practical reasons. Both require substantially more data to train effectively, and our dataset spans only a single year. They also introduce computational overhead that slows down iteration during experimentation. Given these constraints, a standard LSTM provides a reasonable balance between expressiveness and trainability.
+
+Our implementation uses PyTorch and consists of two stacked LSTM layers with 64 hidden units each, followed by a linear output layer. The network processes sequences of 48 hourly observations (two days), with only the final hidden state passed to the output layer to produce a point prediction for the next hour. The implementation can be found in \texttt{models.py} in the linked GitHub repository.
+
+
+We tune sequence length and number of training epochs via grid search on DTU's HPC cluster. For sequence length, we tested windows ranging from 1 day (24 hours) to 14 days (336 hours), with 48 hours (two days) performing best. The sequence length search is implemented in\\ \texttt{seq\_len\_search.py}, and the epoch search in\\ \texttt{LSTM\_model\_cross\_val\_train.ipynb}.
+
+Standard k-fold cross-validation is inappropriate for time series, as it allows future information to leak into training folds. Instead, we use chronological cross-validation with an expanding window: train on data up to time $t$, validate on a fixed horizon ahead, then advance $t$ and repeat.
+\subsubsection{Classical time series model} % TODO: Marcus :D
+
+
+\section{Experiments \& Results}
+\label{sec:experiments}
+% Dataset: English 2022 energy data with features?
+% Evaluation metrics: coverage, interval width
+
+\subsection{Experimental Setup}
+\label{ssec:setup}
+
+% Experimental design
+% Hyperparameter choices
+% Train/test splits
+% Distribution shift periods
+
+\subsection{Results}
+\label{ssec:results}
+
+% Comparison plots
+% Coverage tables
+% Interval width analysis
+
+\subsection{Analysis}
+\label{ssec:analysis}
+
+% When/why ECI outperforms
+% Performance during distribution shifts
+% Model comparison insights
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+% Summary of findings
+% Limitations
+% Future work
 
 \bibliographystyle{IEEEbib}
-\bibliography{template}
+\bibliography{bibliography}
 
 \newpage
 
@@ -111,17 +171,21 @@ List and number all bibliographical references at the end of the paper. Referenc
 
 This declaration \textbf{must} be filled out and included as the \textbf{final page} of the document. The questions apply to all parts of the work, including research, project writing, and coding.
 \begin{itemize}
-\item I/we have used generative AI tools: [yes / no]
+\item I/we have used generative AI tools: yes
 \end{itemize}
 If you answered \emph{yes}, please complete the following sections. List the generative AI tools you have used:
 \begin{itemize}
-\item
+\item Claude by Anthropic AI
+\item Claude Code by Anthropic AI
 \end{itemize}
 Describe how the tools were used:
 \begin{description}
 \item[What did you use the tool(s) for?]
+\item[] We used the named AI tools for brainstorming- and evaluating ideas, proofreading and correcting parts of the text in the report, bugfixing and generating non-essential, utility code, such as plotting data with matplotlib.
 \item[At what stage(s) of the process did you use the tool(s)?]
+\item[] We used the named AI tools during the research-, implementation and proofreading stages of the process.
 \item[How did you use or incorporate the generated output?]
+\item[] Some generated output we simply read and responded to, in order to guide our thinking, in a similar way to what we would have done to a TA or professor. Some coding output, such as matplotlib plotting code, we ran directly. And grammatical corrections to sections in our report, we included in the report.
 \end{description}
 
 \end{document}
