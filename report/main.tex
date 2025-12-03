@@ -2,6 +2,7 @@
 %          02456.sty  - 02456 LaTeX style file adapted from ICASSP
 \documentclass{article}
 \usepackage{amsmath,graphicx,02456}
+\usepackage{float}
 
 \toappear{02456 Deep Learning, DTU Compute, Fall 2025}
 
@@ -124,35 +125,108 @@ Our implementation uses PyTorch and consists of two stacked LSTM layers with 64 
 We tune sequence length and number of training epochs via grid search on DTU's HPC cluster. For sequence length, we tested windows ranging from 1 day (24 hours) to 14 days (336 hours), with 48 hours (two days) performing best. The sequence length search is implemented in\\ \texttt{seq\_len\_search.py}, and the epoch search in\\ \texttt{LSTM\_model\_cross\_val\_train.ipynb}.
 
 Standard k-fold cross-validation is inappropriate for time series, as it allows future information to leak into training folds. Instead, we use chronological cross-validation with an expanding window: train on data up to time $t$, validate on a fixed horizon ahead, then advance $t$ and repeat.
-\subsubsection{Classical time series model} % TODO: Marcus :D
+
+\subsubsection{Classical time series model}
+
+For comparison with the deep learning approach, we implement a classical time series model using ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables). This class of models has been the standard approach for time series forecasting for decades and provides a strong baseline for our conformal prediction experiments.
+
+ARIMAX models decompose the forecast into three components, specified by the order $(p, d, q)$.
+
+The AutoRegressive (AR) component captures how the target depends linearly on its own past values. With order $p$, the model uses the previous $p$ observations:
+\begin{equation*}
+    y_t = c + \sum_{i=1}^{p} \phi_i y_{t-i} + \epsilon_t
+\end{equation*}
+where $\phi_i$ are the AR coefficients and $c$ is a constant.
+
+The Integrated (I) component with order $d$ applies differencing $d$ times to make the series stationary. For $d=1$, we model $\Delta y_t = y_t - y_{t-1}$ instead of $y_t$ directly. This removes trends that would otherwise violate stationarity assumptions.
+
+The Moving Average (MA) component models the target as a function of past forecast errors. With order $q$, it incorporates the previous $q$ error terms:
+\begin{equation*}
+    y_t = \mu + \sum_{j=1}^{q} \theta_j \epsilon_{t-j} + \epsilon_t
+\end{equation*}
+where $\theta_j$ are the MA coefficients, $\mu$ is the mean, and $\epsilon_t$ represents white noise.
+
+Combining all three components with the exogenous variables $X$ (wind forecasts, temperature, consumption, etc.), the full ARIMAX model becomes:
+\begin{equation*}
+    y_t = c + \sum_{i=1}^{p} \phi_i y_{t-i} + \sum_{j=1}^{q} \theta_j \epsilon_{t-j} + \beta^T X_t + \epsilon_t
+\end{equation*}
+where $\beta$ are the coefficients for the exogenous variables. This formula applies after taking $d$ differences of the original series.
+
+Selecting the order $(p, d, q)$ manually requires examining autocorrelation plots and testing multiple configurations. To automate this process, we use the \texttt{auto\_arima} function from the \texttt{pmdarima} package, which performs a systematic search over candidate orders. We constrain the search space to $p, q \in [0, 5]$ and use the Bayesian Information Criterion (BIC). The search procedure tests combinations and selects the order that minimizes BIC.
+
+Once the optimal order is identified, we fit the final model using \texttt{statsmodels.SARIMAX}. We set avoid seasonality, since seasonal ARIMA requires multiple complete seasonal cycles to reliably estimate seasonal parameters. With only one year of data (Feb 2022 - Feb 2023), we cannot observe repeated annual patterns, making seasonal parameter estimation unreliable.
+
+The implementation can be found in \texttt{models.py} and \texttt{Time\_series\_models.ipynb} in the linked repository.
 
 
 \section{Experiments \& Results}
 \label{sec:experiments}
-% Dataset: English 2022 energy data with features?
-% Evaluation metrics: coverage, interval width
+
+We conduct experiments to evaluate how well online conformal methods construct prediction intervals for energy price forecasting. Our focus is on comparing OGD and ECI across different forecasting models and understanding their performance.
 
 \subsection{Experimental Setup}
 \label{ssec:setup}
 
-% Experimental design
-% Hyperparameter choices
-% Train/test splits
-% Distribution shift periods
+We compare OGD and ECI on both ARIMAX and LSTM models. ECI is evaluated in three variants: basic, cutoff and integral each with sigmoid or Gaussian shaping functions. Performance is measured using coverage rate (the proportion of true values falling within prediction intervals), average interval width, avg median. The target coverage is 90\%, corresponding to miscoverage rate $\alpha = 0.1$.
+
+Hyperparameters are selected through random search over 10,000 configurations. For OGD, we sample learning rate $\eta \in [0.01, 10]$ and initial threshold $q_0 \in [5, 100]$. For ECI, we additionally sample sigmoid scaling parameter $c \in [0.1, 10]$ and select between sigmoid and Gaussian shaping functions. The cutoff variant of ECI uses a rolling window for adaptive thresholding, with window length sampled from $\{20, \ldots, 200\}$ and Gaussian bandwidth $h \in [0.3, 2.0]$. From the evaluated configurations, we select the one that minimizes average interval width while achieving coverage between 88\% and 92\%.
+
+The dataset is split 80/20 along the temporal axis. Training data spans February 1 to November 20, 2022 (7,026 observations), and test data spans November 20, 2022 to February 1, 2023 (1,757 observations). This split ensures the test period includes the volatile winter months of the energy crisis, providing a test of how well the conformal methods handle distribution shifts.
 
 \subsection{Results}
 \label{ssec:results}
 
-% Comparison plots
-% Coverage tables
-% Interval width analysis
+We present results comparing OGD and ECI variants across both forecasting models, examining both visual behavior and quantitative performance metrics.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.2]{../src/notebooks/sarimax_conformal_intervals.png}
+    \caption{SARIMAX results with Confidence Intervals for both OGD and ECI}
+    \label{graph:LSTM}
+\end{figure}
+
+Figure~\ref{graph:LSTM} presents the SARIMAX model results with similar layout. Compared to LSTM, both conformal methods produce noticeably wider intervals throughout the test period. The predicted prices (orange dashed line) show larger deviations from actual prices, and the intervals remain persistently wide even during stable periods, reflecting the classical model's higher prediction uncertainty.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[scale=0.2]{../src/notebooks/lstm_conformal_intervals.png}
+    \caption{LSTM results with Confidence Intervals for both OGD and ECI}
+    \label{graph:LSTM_pred_vs_actual_CI}
+\end{figure}
+
+Figure~\ref{graph:LSTM_pred_vs_actual_CI} shows the LSTM model predictions with conformal intervals over the test period. The top panel displays OGD intervals (purple shaded region), while the bottom panel shows ECI intervals (green shaded region). Both methods track the actual prices (blue line) well, with intervals widening during volatile periods (notably around timesteps 400-700) and tightening during stable periods. Visually, the ECI intervals appear narrower, particularly during stable periods between timesteps 800-1200, suggesting more adaptive behavior.
+
+
+\begin{table}[H]
+\centering
+\caption{Performance comparison of conformal methods. Coverage (\%), average width, and median width.}
+\label{tab:results}
+\small
+\begin{tabular}{l|ccc|ccc}
+\hline
+Method /         & \multicolumn{3}{c|}{ARIMAX} & \multicolumn{3}{c}{LSTM} \\
+Model            & Cov. & Avg. & Med. & Cov. & Avg. & Med. \\
+                 & (\%)  & W.   & W.   & (\%)  & W.   & W.  \\ \hline
+OGD          & 90.0  & 222  & 198  & 90.2  & 107  & 106  \\
+ECI          & 88.7  & \textbf{219} & \textbf{197} & 88.6 & \textbf{101} & \textbf{101} \\
+ECI-cut.     & 88.7  & 220  & 197  & 88.6  & 101  & 104  \\
+ECI-int.     & 86.0  & 220  & 196  & 82.2  & 92   & 97   \\ \hline
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:results} quantifies the performance differences observed in the figures. For the LSTM model, OGD achieves 90.2\% coverage with average interval width of 107 DKK/MWh, closely matching the target 90\% coverage rate. The basic ECI variant produces narrower intervals (101 DKK/MWh average and median), but with slightly lower coverage at 88.6\%. ECI-cutoff shows similar performance (88.6\% coverage, 101 DKK/MWh average width), while ECI-integral achieves the narrowest intervals (92 DKK/MWh average) at the cost of significantly undercovering at 82.2\%.
+
+For the ARIMAX model, all methods produce substantially wider intervals. OGD achieves exactly 90.0\% coverage with 222 DKK/MWh average width, while the ECI variants show marginal width reductions (219-220 DKK/MWh) but fall below target coverage (86.0-88.7\%). The difference in interval widths between LSTM and ARIMAX (roughly 2× wider for ARIMAX) confirms the visual observations and reflects the classical model's higher prediction uncertainty.
 
 \subsection{Analysis}
 \label{ssec:analysis}
 
-% When/why ECI outperforms
-% Performance during distribution shifts
-% Model comparison insights
+All methods achieve coverage within a reasonable range of the target 90\%. The key differentiator is interval efficiency. For LSTM, basic ECI achieves an average interval width of 101 DKK/MWh compared to OGD's 107 DKK/MWh—a reduction of 6 DKK/MWh, or approximately 5.6\%. This improvement is achieved while maintaining 88.6\% coverage, only 1.6 percentage points below target. By incorporating error magnitude rather than binary feedback, ECI adaptively tightens intervals during stable periods (visible in Figure~\ref{graph:LSTM_pred_vs_actual_CI} around timesteps 800-1200), making it the superior choice when base model quality is high.
+
+The ARIMAX results reveal that interval width is primarily driven by base model quality. ARIMAX ECI shows roughly double the average width (219 DKK/MWh) compared to LSTM ECI (101 DKK/MWh) due to the classical model's larger prediction errors. When base predictions are poor, error-quantification provides minimal advantage over binary feedback—all ARIMAX methods differ by only 3 DKK/MWh. This underscores that conformal methods amplify base model quality rather than compensate for it.
+
+It is worth noting that as the test period progresses, the conformal methods accumulate more observations, allowing the threshold $q_t$ to adapt more effectively. This suggests that with longer test sequences, average interval widths would continue to improve as the methods learn from additional coverage feedback.
 
 
 \section{Conclusion}

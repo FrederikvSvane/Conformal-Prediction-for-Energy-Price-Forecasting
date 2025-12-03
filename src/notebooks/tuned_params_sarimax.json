@@ -1,0 +1,18 @@
+{
+  "basic": {
+    "c": 1.25,
+    "eq_function": "gaussian",
+    "eta": 9.33,
+    "q_init": 37.24,
+    "version": "basic"
+  },
+  "cutoff": {
+    "c": 0.1,
+    "eq_function": "sigmoid",
+    "eta": 7.92,
+    "h": 0.31,
+    "q_init": 58.16,
+    "version": "cutoff",
+    "window_length": 89
+  }
+}
