@@ -1,8 +1,20 @@
 \begin{thebibliography}{1}
 
+\bibitem{gibbs2021adaptive}
+Isaac Gibbs and Emmanuel Candès,
+\newblock ``Adaptive conformal inference under distribution shift,'' 2021.
+
 \bibitem{wu2025eci}
 Junxi Wu, Dongjian Hu, Yajie Bao, Shu-Tao Xia, and Changliang Zou,
 \newblock ``Error-quantified conformal inference for time series,'' 2025.
+
+\bibitem{angelopoulos2022conformal}
+Anastasios~N. Angelopoulos and Stephen Bates,
+\newblock ``A gentle introduction to conformal prediction and distribution-free uncertainty quantification,'' 2022.
+
+\bibitem{svane2025github}
+Frederik~V. Svane and Marcus P.~L. Christoffersen,
+\newblock ``Conformal prediction for energy price forecasting,'' \url{https://github.com/FrederikvSvane/Conformal-Prediction-for-Energy-Price-Forecasting}, 2025.
 
 \bibitem{who2018housing}
 {World Health Organization},

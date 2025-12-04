@@ -3,6 +3,10 @@
 \documentclass{article}
 \usepackage{amsmath,graphicx,02456}
 \usepackage{float}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{breaklinks=true}
+\def\UrlBreaks{\do\/\do-\do_}
 
 \toappear{02456 Deep Learning, DTU Compute, Fall 2025}
 
@@ -25,7 +29,19 @@
 \maketitle
 
 \begin{abstract}
-The abstract should contain about 100 to 150 words summarizing the problem, approach, and key findings.
+Energy price forecasting requires reliable uncertainty estimates for effective 
+risk management. Standard conformal prediction provides guaranteed coverage but 
+assumes exchangeable data, which is violated in time series settings. 
+We apply online conformal methods, Online Gradient Descent (OGD) and 
+Error-Quantified Conformal Inference (ECI), to English electricity spot price 
+forecasting during the 2022 energy crisis, using both LSTM and ARIMAX models. 
+Our results show that ECI achieves 5.6\% narrower prediction intervals than OGD 
+when paired with the LSTM model (101 vs 107 GBP/MWh average width) while 
+maintaining near-target coverage (88.6\% vs 90.2\%). 
+However, this advantage diminishes with weaker base models, 
+confirming that conformal methods amplify rather than compensate for 
+prediction quality. These findings suggest ECI is preferable when strong 
+base models are available.
 \end{abstract}
 
 \section{Introduction}
@@ -36,14 +52,15 @@ Conformal prediction is able to provide these prediction intervals, with guarant
 Setting a miscoverage rate of $\alpha = 0.1$ means we expect 90\% of true values to fall within our intervals. 
 However, standard conformal methods assume exchangeable data, which is violated in time series, where observations are sequentially dependent/inexchangeable.
 
-Extensions to standard conformal inference, such as Adaptive Conformal Inference (ACI) and Online Gradient Descent (OGD), 
+Extensions to standard conformal inference, such as Adaptive Conformal Inference (ACI) and Online Gradient Descent (OGD) \cite{gibbs2021adaptive}, 
 have been developed to address this problem of assumed exchangeability, by dynamically adjusting intervals based on binary coverage feedback. 
 Error-Quantified Conformal Inference (ECI) \cite{wu2025eci} extends these methods further, by incorporating the \textit{magnitude} of prediction errors, instead of mere binary miss/cover feedback.
 
 In this project, we apply these conformal methods to English electricity spot price forecasting using 2022 hourly data with weather and consumption features. 
-We implement two forecasting models, ARIMAX and LSTM, and compare OGD and ECI for constructing prediction intervals. 
-This allows us to explore how online conformal prediction performs on real energy data from the 2022 energy crisis, where the market experienced increased volatility and distribution shifts.
-
+We implement two forecasting models, ARIMAX and LSTM, to evaluate how conformal methods perform across models of varying quality and to demonstrate the model-agnostic nature of conformal inference \cite{angelopoulos2022conformal}. 
+Specifically, we compare OGD and ECI for constructing prediction intervals.
+This allows us to explore how online conformal prediction performs on real energy data from the 2022 energy crisis, where the market experienced increased volatility and distribution shifts.\\
+Our implementation is available at \cite{svane2025github}.
 
 \section{Methods}
 \label{sec:methods}
@@ -51,10 +68,10 @@ This allows us to explore how online conformal prediction performs on real energ
 \subsection{Conformal Prediction}
 \label{ssec:conformal}
 
-Conformal prediction constructs prediction intervals by comparing new observations to a calibration set. Given a point prediction $\hat{y}_t$ and a true value $y_t$, we define a nonconformity score $s_t = |y_t - \hat{y}_t|$ measuring how ''unusual`` the observation is. A prediction interval is then constructed as $[\hat{y}_t - q_t, \hat{y}_t + q_t]$, where $q_t$ is a threshold chosen such that the interval covers the true value with probability $1 - \alpha$.
+Conformal prediction constructs prediction intervals by comparing new observations to a calibration set \cite{angelopoulos2022conformal}. Given a point prediction $\hat{y}_t$ and a true value $y_t$, we define a nonconformity score $s_t = |y_t - \hat{y}_t|$ measuring how ''unusual`` the observation is. A prediction interval is then constructed as $[\hat{y}_t - q_t, \hat{y}_t + q_t]$, where $q_t$ is a threshold chosen such that the interval covers the true value with probability $1 - \alpha$.
 
-Standard conformal prediction assumes exchangeability: the joint distribution of observations is invariant to permutation. 
-This assumption fails for time series data, where observations are chronologically dependent (ie. the next spot price depends on the current spot price). 
+Standard conformal prediction assumes exchangeability, meaning the observations can be reordered without affecting the underlying statistical relationships. 
+This assumption obviously fails for time series data, where observations are strictly chronologically ordered. 
 
 Additionally, the underlying distribution may shift over time, meaning the statistical properties of prices in summer differ from those during winter, 
 and likewise for crisis periods compared to stable periods. 
@@ -73,7 +90,7 @@ Error-Quantified Conformal Inference (ECI) extends OGD by incorporating the magn
 \begin{equation}
     q_{t+1} = q_t + \eta \cdot \left[(\text{err}_t - \alpha) + (s_t - q_t) \cdot f'(s_t - q_t)\right]
 \end{equation}
-where $s_t$ is the nonconformity score and $f$ is a shaping function, such as a sigmoid or a Gaussian kernel. As such, the additional term $(s_t - q_t) \cdot f'(s_t - q_t)$ adjusts the update based on how far the score was from the threshold. 
+where $s_t$ is the nonconformity score and $f$ is a "shaping" function, such as a sigmoid or a Gaussian kernel. As such, the additional term $(s_t - q_t) \cdot f'(s_t - q_t)$ adjusts the update based on how far the score was from the threshold. 
 The choice of shaping function comes with considerations: the sigmoid saturates for large deviations, giving extreme misses similar corrections to moderate ones. The Gaussian kernel goes further, actively dampening corrections for extreme deviations, treating them as potential outliers that should have less influence on the threshold.
 
 \subsection{Data}
@@ -98,7 +115,7 @@ Additionally, we compute temperature deviation from historical norms, based on t
 
 Finally, we include lagged spot price ($t-1$) as a feature, reflecting the realistic constraint that only past prices are observable at prediction time.
 
-This yields 14 input features in total. The data is split 80/20 into training and test sets, preserving temporal order to prevent information leakage.
+This yields 14 input features in total. The data is split 80/20 into training and test sets, preserving temporal order to ensure future data is not used during training.
 
 \subsection{Forecasting Models}
 \label{ssec:forecasting}
@@ -107,41 +124,28 @@ We use two forecasting models to generate point predictions, representing deep l
 
 \subsubsection{Deep Learning Model}
 
-Sequential data like this calls for a recurrent architecture. As covered in the lectures, standard feedforward networks treat each input independently, failing to capture positional relationships within a sequence. They also require fixed input dimensions, making them unsuitable for variable-length sequences. Recurrent neural networks (RNNs) address both issues by processing inputs sequentially and maintaining a hidden state that carries information across time steps.
+Sequential data like this calls for a recurrent architecture. Standard feedforward networks treat each input independently, failing to capture positional relationships within a sequence. They also require fixed input dimensions, making them unsuitable for variable-length sequences. Recurrent neural networks (RNNs) address both issues by processing inputs sequentially and maintaining a hidden state that carries information across time steps.
 
 However, traditional RNNs suffer from vanishing or exploding gradients. During backpropagation, gradients in early layers are computed via the chain rule, resulting in a product across all time steps:
-\begin{equation*}
+\begin{equation}
     \frac{\partial \mathcal{L}}{\partial h_0} = \prod_{t=1}^{T} \frac{\partial h_t}{\partial h_{t-1}} \cdot \frac{\partial \mathcal{L}}{\partial h_T}
-\end{equation*}
-For long sequences, this product either explodes or vanishes. If the intermediate gradients are consistently greater than one, the product blows up. If they are consistently smaller than one, it collapses to zero.
+\end{equation}
+For long sequences, this product either explodes or vanishes. Ie, if the intermediate gradients are consistently greater than one, the product blows up. If they are consistently smaller than one, it goes to zero.
 
-LSTMs address this through a gating mechanism, as we saw in lecture. The cell state acts as a highway that allows gradients to flow across many time steps with minimal transformation. The forget gate controls what information to discard, the input gate controls what new information to store, and the output gate controls what to expose to the next layer. These gates use sigmoid activations to produce values in $[0, 1]$, enabling smooth gradient flow during training.
+LSTMs address this through a gating mechanism. The cell state acts as a highway that allows gradients to flow across many time steps with minimal transformation. The forget gate controls what information to discard, the input gate controls what new information to store, and the output gate controls what to expose to the next layer. These gates use sigmoid activations to produce values in $[0, 1]$, enabling smooth gradient flow during training.
 
 We considered adding attention mechanisms or moving to a full Transformer architecture, but opted against this for practical reasons. Both require substantially more data to train effectively, and our dataset spans only a single year. They also introduce computational overhead that slows down iteration during experimentation. Given these constraints, a standard LSTM provides a reasonable balance between expressiveness and trainability.
 
-Our implementation uses PyTorch and consists of two stacked LSTM layers with 64 hidden units each, followed by a linear output layer. The network processes sequences of 48 hourly observations (two days), with only the final hidden state passed to the output layer to produce a point prediction for the next hour. The implementation can be found in \texttt{models.py} in the linked GitHub repository.
+Our implementation uses PyTorch and consists of two stacked LSTM layers with 64 hidden units each, followed by a linear output layer. The network processes sequences of 48 hourly observations (two days), with only the final hidden state passed to the output layer to produce a point prediction for the next hour. 
 
-
-We tune sequence length and number of training epochs via grid search on DTU's HPC cluster. For sequence length, we tested windows ranging from 1 day (24 hours) to 14 days (336 hours), with 48 hours (two days) performing best. The sequence length search is implemented in\\ \texttt{seq\_len\_search.py}, and the epoch search in\\ \texttt{LSTM\_model\_cross\_val\_train.ipynb}.
-
-Standard k-fold cross-validation is inappropriate for time series, as it allows future information to leak into training folds. Instead, we use chronological cross-validation with an expanding window: train on data up to time $t$, validate on a fixed horizon ahead, then advance $t$ and repeat.
-
+We tune sequence length and number of training epochs via grid search. For sequence length, we tested windows ranging from 1 day (24 hours) to 14 days (336 hours), with 48 hours performing best. We use chronological cross-validation with an expanding window to prevent future information from leaking into training.
 \subsubsection{Classical time series model}
 
-For comparison with the deep learning approach, we implement a classical time series model using ARIMAX (AutoRegressive Integrated Moving Average with eXogenous variables). This class of models has been the standard approach for time series forecasting for decades and provides a strong baseline for our conformal prediction experiments.
-
-ARIMAX models decompose the forecast into three components, specified by the order $(p, d, q)$. The AutoRegressive (AR) component with order $p$ uses the previous $p$ observations of the target. The Integrated (I) component with order $d$ applies differencing $d$ times to make the series stationary—for $d=1$, we model $\Delta y_t = y_t - y_{t-1}$ instead of $y_t$ directly. The Moving Average (MA) component with order $q$ incorporates the previous $q$ forecast error terms. Combining all three with exogenous variables $X$ (wind forecasts, temperature, consumption, etc.), the full ARIMAX model becomes:
-\begin{equation*}
-    y_t = c + \sum_{i=1}^{p} \phi_i y_{t-i} + \sum_{j=1}^{q} \theta_j \epsilon_{t-j} + \beta^T X_t + \epsilon_t
-\end{equation*}
-where $\beta$ are the coefficients for the exogenous variables. This formula applies after taking $d$ differences of the original series.
-
-Selecting the order $(p, d, q)$ manually requires examining autocorrelation plots and testing multiple configurations. To automate this process, we use the \texttt{auto\_arima} function from the \texttt{pmdarima} package, which performs a systematic search over candidate orders. We constrain the search space to $p, q \in [0, 5]$ and use the Bayesian Information Criterion (BIC). The search procedure tests combinations and selects the order that minimizes BIC.
-
-The search identified $(2, 1, 0)$ as optimal, meaning the model uses two autoregressive lags ($p=2$), first-order differencing ($d=1$), and no moving average component ($q=0$). With $q=0$, the MA term drops from the equation, and the model relies solely on past values and exogenous variables. We fit this configuration using \texttt{statsmodels.ARIMAX} without seasonality, since seasonal ARIMA requires multiple complete seasonal cycles. With only one year of data, we cannot observe repeated annual patterns, making seasonal parameter estimation unreliable.
-
-The implementation can be found in \texttt{models.py} and \texttt{Time\_series\_models.ipynb} in the linked repository.
-
+For comparison with the deep learning approach, we implement an ARIMAX model (AutoRegressive Integrated Moving Average with eXogenous variables). ARIMAX combines autoregressive terms using the previous $p$ observations, differencing of order $d$ to achieve stationarity, moving average terms using the previous $q$ forecast errors, and exogenous variables $X$. The full model is:
+\begin{equation}
+y_t = c + \sum_{i=1}^{p} \phi_i y_{t-i} + \sum_{j=1}^{q} \theta_j \epsilon_{t-j} + \beta^T X_t + \epsilon_t
+\end{equation}
+We use the auto\_arima function from pmdarima to select the optimal order, constraining the search to $p, q \in [0, 5]$ and using the Bayesian Information Criterion. The search identified order (2, 1, 0) as optimal. We do not use seasonal ARIMA, as short-term seasonal patterns are already captured through our engineered time features, and the increased complexity and computational overhead is not justified given our limited data.
 
 \section{Experiments \& Results}
 \label{sec:experiments}
@@ -172,28 +176,22 @@ handle distribution shifts.
 
 \subsection{Results}
 \label{ssec:results}
-
 We present results comparing OGD and ECI variants across both forecasting models, 
 examining both visual behavior and quantitative performance metrics.
-
 \begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.2]{../src/notebooks/SARIMAX_conformal_intervals.png}
-    \caption{ARIMAX results with Confidence Intervals for both OGD and ECI}
-    \label{graph:ARIMAX}
+\centering
+\includegraphics[scale=0.19]{../src/notebooks/lstm_conformal_intervals.png}
+\caption{LSTM results with Confidence Intervals for both OGD and ECI}
+\label{graph:LSTM}
 \end{figure}
-
-Figure~\ref{graph:ARIMAX} shows ARIMAX results over timesteps 300-750. Both OGD and ECI produce consistently wide intervals throughout the test period, with larger prediction deviations during the high-volatility period around timesteps 400-600, reflecting the classical model's higher prediction uncertainty.
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[scale=0.2]{../src/notebooks/lstm_conformal_intervals.png}
-    \caption{LSTM results with Confidence Intervals for both OGD and ECI}
-    \label{graph:LSTM}
-\end{figure}
-
 Figure~\ref{graph:LSTM} shows LSTM results over timesteps 300-750. Both OGD and ECI track actual prices closely, with intervals widening during the volatile period around timesteps 400-600, then tightening during stable periods toward timestep 750. ECI intervals appear slightly narrower throughout, suggesting more adaptive behavior.
-
+\begin{figure}[H]
+\centering
+\includegraphics[scale=0.19]{../src/notebooks/SARIMAX_conformal_intervals.png}
+\caption{ARIMAX results with Confidence Intervals for both OGD and ECI}
+\label{graph:ARIMAX}
+\end{figure}
+Figure~\ref{graph:ARIMAX} shows ARIMAX results over timesteps 300-750. Both OGD and ECI produce consistently wide intervals throughout the test period, with larger prediction deviations during the high-volatility period around timesteps 400-600, reflecting the classical model's higher prediction uncertainty.
 \begin{table}[H]
 \centering
 \caption{Performance comparison of conformal methods. Coverage (\%), average width, and median width.}
@@ -204,38 +202,48 @@ Figure~\ref{graph:LSTM} shows LSTM results over timesteps 300-750. Both OGD and 
 Method /         & \multicolumn{3}{c|}{ARIMAX} & \multicolumn{3}{c}{LSTM} \\
 Model            & Cov. & Avg. & Med. & Cov. & Avg. & Med. \\
                  & (\%)  & W.   & W.   & (\%)  & W.   & W.  \\ \hline
-OGD          & 90.0  & 222  & 198  & 90.2  & 107  & 106  \\
+OGD          & \textbf{90.0}  & 222  & 198  & \textbf{90.2}  & 107  & 106  \\
 ECI          & 88.7  & \textbf{219} & \textbf{197} & 88.6 & \textbf{101} & \textbf{101} \\
 ECI-cut.     & 88.7  & 220  & 197  & 88.6  & 101  & 104  \\
 ECI-int.     & 86.0  & 220  & 196  & 82.2  & 92   & 97   \\ \hline
 \end{tabular}
 \end{table}
-All methods achieve coverage within a reasonable range of the target 90\%. 
-The key metric is therefore the average interval width. For LSTM, basic ECI achieves an average 
-interval width of 101 DKK/MWh compared to OGD's 107 DKK/MWh—a reduction of 6 DKK/MWh, or 
-approximately 5.6\%. This improvement is achieved while maintaining 88.6\% coverage, 
-only 1.6 percentage points below target. By incorporating error magnitude rather than binary 
+OGD achieves coverage closer to the 90\% target (90.0-90.2\%) compared to ECI variants (86.0-88.7\%). 
+However, ECI produces narrower intervals, particularly with the LSTM model 
+where basic ECI achieves 101 GBP/MWh compared to OGD's 107 GBP/MWh. 
+This presents a practical tradeoff: OGD provides slightly more reliable coverage in this case, 
+while ECI offers tighter intervals at the cost of slightly more frequent misses.
+By incorporating error magnitude rather than binary 
 feedback, ECI adaptively tightens intervals during stable 
 periods (visible in Figure~\ref{graph:LSTM} during the stable period toward timestep 750), 
 making it the superior choice when base model quality is high.
 
 The ARIMAX results reveal that interval width is primarily driven by base model quality. 
-ARIMAX ECI shows roughly double the average width (219 DKK/MWh) compared to LSTM ECI (101 DKK/MWh)
-due to the model's larger prediction errors. When base predictions are poor, 
-error-quantification provides minimal advantage over binary feedback—all. ARIMAX methods differ 
-by only 3 DKK/MWh. This underscores that conformal methods amplify base model quality rather than 
-compensate for it.
+ARIMAX ECI shows roughly double the average width (219 GBP/MWh) compared to 
+LSTM ECI (101 GBP/MWh) due to the model's larger prediction errors. 
+When base predictions are poor, error-quantification provides minimal 
+advantage over binary feedback, with ARIMAX methods differing by 
+only 3 GBP/MWh. This underscores that conformal methods amplify base model 
+quality rather than compensate for it.
 
-It is worth noting that as the test period progresses, the conformal methods 
-accumulate more observations, allowing the threshold $q_t$ to adapt more effectively. 
-This suggests that with longer test sequences, average interval widths would continue 
-to improve as the methods learn from additional coverage feedback.
+The lower coverage of ECI may be partially explained by the choice of 
+shaping function. Energy prices exhibit sudden spikes that, 
+while meaningful market events, are treated as outliers by the 
+shaping functions. The sigmoid function does not widen intervals 
+aggressively for large deviations, and the Gaussian kernel actively dampens 
+corrections for extreme errors. In a domain where spikes carry important 
+information, this leads to insufficient interval widths and more 
+frequent misses.
+
+\section{Discussion}
+
+
 
 
 \section{Conclusion}
 \label{sec:conclusion}
 
-This project evaluated online conformal prediction methods for energy price forecasting during the 2022 European energy crisis. Our results demonstrate that Error-Quantified Conformal Inference (ECI) achieves 5.6\% narrower intervals than Online Gradient Descent (OGD) when paired with high-quality base models (LSTM: 101 vs 107 DKK/MWh), while maintaining near-target coverage (88.6\% vs 90.2\%). However, this advantage diminishes with weaker prediction models, as can be seen by ARIMAX which showed only 1.4\% width reduction between OGD and ECI, thereby confirming that conformal methods amplify rather than compensate for base model quality. While our single-year dataset limits seasonal modeling and test sequence length, these findings suggest ECI is the superior choice for uncertainty quantification when strong predictive models are available.
+This project evaluated online conformal prediction methods for energy price forecasting during the 2022 European energy crisis. Our results demonstrate that Error-Quantified Conformal Inference (ECI) achieves 5.6\% narrower intervals than Online Gradient Descent (OGD) when paired with high-quality base models (LSTM: 101 vs 107 GBP/MWh), while maintaining near-target coverage (88.6\% vs 90.2\%). However, this advantage diminishes with weaker prediction models, as can be seen by ARIMAX which showed only 1.4\% width reduction between OGD and ECI, thereby confirming that conformal methods amplify rather than compensate for base model quality. While our single-year dataset limits seasonal modeling and test sequence length, these findings suggest ECI is the superior choice for uncertainty quantification when strong predictive models are available.
 
 \bibliographystyle{IEEEbib}
 \bibliography{bibliography}
