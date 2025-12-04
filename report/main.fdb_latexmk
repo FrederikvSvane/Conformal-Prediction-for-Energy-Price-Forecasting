@@ -1,17 +1,17 @@
 # Fdb version 4
-["bibtex main"] 1764796601.23999 "main.aux" "main.bbl" "main" 1764796604.02734 0
+["bibtex main"] 1764863587.56081 "main.aux" "main.bbl" "main" 1764863745.4122 0
   "./IEEEbib.bst" 1764788911.19258 17903 9ff833f4bf67f47893e44ee17b52d211 ""
   "./bibliography.bib" 1764788911.1926 511 30b2802379caa441c5f114b239930ccc ""
-  "main.aux" 1764796603.98984 3036 6062a062bba862c8e9aef369291d1db4 "pdflatex"
+  "main.aux" 1764863745.37557 2862 3a4b1deff3f170248d410bd6abf79efc "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1764796601.25293 "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" "main.pdf" "main" 1764796604.02751 0
-  "../src/notebooks/lstm_conformal_intervals.png" 1764795727.95684 2351727 0f0ad5a1ba8835e2a122b47f66d53313 ""
-  "../src/notebooks/sarimax_conformal_intervals.png" 1764795743.43422 2361061 f2cb9c78c26195aff16cf5f3b264e361 ""
+["pdflatex"] 1764863743.55373 "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" "main.pdf" "main" 1764863745.41229 0
+  "../src/notebooks/lstm_conformal_intervals.png" 1764860699.37864 1604852 c299be4d9a9172c9b1d14b0e4981ccde ""
+  "../src/notebooks/sarimax_conformal_intervals.png" 1764860792.62004 1479655 14f0d64744221df25b7c5db06118ef57 ""
   "/etc/texmf/web2c/texmf.cnf" 1759167609.13188 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" 1764796598.29867 21194 a0c52eb689488d794a83ea7d5e92443a ""
+  "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" 1764863743.41458 20210 1a8d033908a5b9369a4e75a0cee0406f ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -81,9 +81,9 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1759167612 128227 ed67923a37f7748d267799454bc1f95b ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1759167621 1928192 c68e95fab658b34baad4b287e39cdc45 ""
   "02456.sty" 1764788911.1916 8979 a4346a02226f842159f0de1cc7fdca90 ""
-  "main.aux" 1764796603.98984 3036 6062a062bba862c8e9aef369291d1db4 "pdflatex"
-  "main.bbl" 1764796601.25163 369 320b788e8ca310f1c4736c745b4b508c "bibtex main"
-  "main.tex" 1764796598.29867 21194 a0c52eb689488d794a83ea7d5e92443a ""
+  "main.aux" 1764863745.37557 2862 3a4b1deff3f170248d410bd6abf79efc "pdflatex"
+  "main.bbl" 1764863587.57234 369 320b788e8ca310f1c4736c745b4b508c "bibtex main"
+  "main.tex" 1764863743.41458 20210 1a8d033908a5b9369a4e75a0cee0406f ""
   (generated)
   "main.aux"
   "main.log"
