@@ -54,7 +54,7 @@ class SARIMAX_model:
         
         self.best_order = auto_model.order
         
-        # Preffering to use statsmodels over pmdarima as we've had the best experiences with it. 
+        # Preferring to use statsmodels over pmdarima as we've had the best experiences with it. 
         # However, pmdarima has the auto_arima which is very useful for order selection. 
         # Alternatively, we could do a simple grid search with 'bic' ourselves, but this works just fine.
         model = SARIMAX(

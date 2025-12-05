@@ -118,10 +118,6 @@ class ECI_Predictor(OGD_Predictor):
         return err_t - self.alpha + eq_term
 
     def integral_update_term(self, y_pred, y_true):
-        """
-        ECI-integral: Integrate errors over all past timesteps
-        with exponentially increasing weights for recent errors
-        """
         score = abs(y_true - y_pred)
         
         # Store current observation

@@ -55,29 +55,6 @@ def round_params(params):
     return rounded
 
 def tune_hyperparameters(predictions, actuals, n_trials=10000, save_path='tuned_params.json'):
-    """
-    Tune hyperparameters for ECI predictor and save to JSON file.
-
-    Parameters:
-    -----------
-    predictions : array-like
-        Point predictions
-    actuals : array-like
-        True values
-    n_trials : int
-        Number of random search trials (default: 10000)
-    save_path : str
-        Path to save the tuned parameters (default: 'tuned_params.json')
-
-    Returns:
-    --------
-    best_params_basic : dict
-        Best parameters for basic variant
-    best_params_cutoff : dict
-        Best parameters for cutoff variant
-    """
-
-    # Define parameter distributions for random search
     param_distributions_basic = {
         'eta': loguniform(0.01, 10.0),
         'q_init': uniform(5.0, 100.0),
@@ -91,7 +68,7 @@ def tune_hyperparameters(predictions, actuals, n_trials=10000, save_path='tuned_
         'q_init': uniform(5.0, 100.0),
         'c': loguniform(0.1, 10.0),
         'eq_function': ['sigmoid', 'gaussian'],
-        'window_length': randint(20, 201),  # 20 to 200
+        'window_length': randint(20, 201),
         'h': uniform(0.3, 2.0),
         'version': ['cutoff']
     }
@@ -135,7 +112,5 @@ def tune_hyperparameters(predictions, actuals, n_trials=10000, save_path='tuned_
 
     with open(save_path, 'w') as f:
         json.dump(tuned_params, f, indent=2)
-
-    print(f"\nSaved tuned parameters to {save_path}")
 
     return best_params_basic, best_params_cutoff

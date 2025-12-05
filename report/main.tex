@@ -93,6 +93,17 @@ Error-Quantified Conformal Inference (ECI) extends OGD by incorporating the magn
 where $s_t$ is the nonconformity score and $f$ is a "shaping" function, such as a sigmoid or a Gaussian kernel. As such, the additional term $(s_t - q_t) \cdot f'(s_t - q_t)$ adjusts the update based on how far the score was from the threshold. 
 The choice of shaping function comes with considerations: the sigmoid saturates for large deviations, giving extreme misses similar corrections to moderate ones. The Gaussian kernel goes further, actively dampening corrections for extreme deviations, treating them as potential outliers that should have less influence on the threshold.
 
+We further evaluate two variants of ECI. ECI-cutoff only applies the
+error-quantification term when
+deviations exceed an adaptive
+threshold $h_t$ computed from recent
+score ranges, otherwise reverting
+to binary feedback like OGD.
+ECI-integral replaces the
+single-step update with a weighted
+sum over all past observations,
+using exponentially decaying weights
+to emphasize recent data over past data.
 \subsection{Data}
 \label{ssec:data}
 
@@ -173,7 +184,6 @@ The dataset is split 80/20 meaning the training data spans February 1 to
 November 20, 2022 (7,026 observations), and test data spans November 20, 2022 to 
 February 1, 2023 (1,757 observations). This split ensures the test period includes the winter months of the energy crisis, providing a test of how well the conformal methods 
 handle distribution shifts.
-
 \subsection{Results}
 \label{ssec:results}
 We present results comparing OGD and ECI variants across both forecasting models, 
@@ -187,7 +197,7 @@ examining both visual behavior and quantitative performance metrics.
 Figure~\ref{graph:LSTM} shows LSTM results over timesteps 300-750. Both OGD and ECI track actual prices closely, with intervals widening during the volatile period around timesteps 400-600, then tightening during stable periods toward timestep 750. ECI intervals appear slightly narrower throughout, suggesting more adaptive behavior.
 \begin{figure}[H]
 \centering
-\includegraphics[scale=0.19]{../src/notebooks/SARIMAX_conformal_intervals.png}
+\includegraphics[scale=0.19]{../src/notebooks/ARIMAX_conformal_intervals.png}
 \caption{ARIMAX results with Confidence Intervals for both OGD and ECI}
 \label{graph:ARIMAX}
 \end{figure}
@@ -236,10 +246,12 @@ information, this leads to insufficient interval widths and more
 frequent misses.
 
 \section{Discussion}
+\label{sec:discussion}
+The primary limitation is base model quality. More training data spanning multiple years would enable better seasonal modeling and predictions, allowing conformal methods to construct tighter intervals.
 
+The ECI variants show limitations in this volatile setting. ECI-cutoff provides minimal improvement because the adaptive threshold offers little benefit with high volatility. ECI-integral achieves the worst coverage and has $O(t)$ computational complexity. We did not extensively tune its hyperparameters due to poor initial results, suggesting past errors may carry limited information for this data.
 
-
-
+The choice of shaping function affects performance. Both sigmoid and Gaussian functions dampen corrections for extreme deviations, but energy price spikes are meaningful events that should widen intervals. A linear shaping function would preserve corrections for large errors rather than dampening them. Finally, more sophisticated hyperparameter optimization such as Bayesian optimization could improve the coverage-width trade-off.
 \section{Conclusion}
 \label{sec:conclusion}
 

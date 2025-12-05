@@ -64,13 +64,13 @@ def load_and_preprocess_energy_data(csv_path: str = '../data/energy_data.csv', k
 
     return df
 
-def load_and_preprocess_sarimax_data(csv_path: str = '../../data/energy_data.csv') -> pd.DataFrame:
+def load_and_preprocess_arimax_data(csv_path: str = '../../data/energy_data.csv') -> pd.DataFrame:
     """
-    Load and preprocess energy price dataset for SARIMAX
+    Load and preprocess energy price dataset for ARIMAX
     """
     df = load_and_preprocess_energy_data(csv_path, keep_date=False)
     
-    # Drop temporal features that SARIMAX handles internally
+    # Drop temporal features that ARIMAX handles internally
     df.drop(['day_nr', 'week_nr', 'year', 'month', 
              'day_of_year_sin', 'day_of_year_cos'], axis=1, inplace=True)
     
