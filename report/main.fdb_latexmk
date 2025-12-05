@@ -1,17 +1,18 @@
 # Fdb version 4
-["bibtex main"] 1764939752.6014 "main.aux" "main.bbl" "main" 1764940173.95813 0
+["bibtex main"] 1764953508.90737 "main.aux" "main.bbl" "main" 1764953511.34784 0
   "./IEEEbib.bst" 1764788911.19258 17903 9ff833f4bf67f47893e44ee17b52d211 ""
   "./bibliography.bib" 1764925061.83501 1377 1e0417dbffd48c90bd5c70c5649dad49 ""
-  "main.aux" 1764940173.91308 3950 7de296600d3118e46102ed4119bf1dab "pdflatex"
+  "main.aux" 1764953511.29691 4204 aa88c257c0c322477148c306da8bfc1c "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1764940172.00723 "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" "main.pdf" "main" 1764940173.95829 0
-  "../src/notebooks/arimax_conformal_intervals.png" 1764940166.17381 1476972 c698138eefe7d5b8e51ed46708454390 ""
+["pdflatex"] 1764953508.91779 "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" "main.pdf" "main" 1764953511.34799 0
+  "../src/notebooks/arimax_conformal_intervals.png" 1764940270.6215 1476972 c698138eefe7d5b8e51ed46708454390 ""
+  "../src/notebooks/data.png" 1764953475.52456 268349 839d9f9e8482f593165d1ee161d75595 ""
   "../src/notebooks/lstm_conformal_intervals.png" 1764938589.64781 1602558 1c088f8580f079228de04c16f6d04e5a ""
   "/etc/texmf/web2c/texmf.cnf" 1759167609.13188 475 c0e671620eb5563b2130f56340a5fde8 ""
-  "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" 1764940171.84681 21183 ce7127d599d054577c0ae299dd0b8714 ""
+  "/home/marcus/projects/dtu/Conformal-Prediction-for-Energy-Price-Forecasting/report/main.tex" 1764953506.33973 21425 ab1953128b2c14a0df82e85df57101a5 ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -112,10 +113,10 @@
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1759167612 128227 ed67923a37f7748d267799454bc1f95b ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1759167621 1928192 c68e95fab658b34baad4b287e39cdc45 ""
   "02456.sty" 1764788911.1916 8979 a4346a02226f842159f0de1cc7fdca90 ""
-  "main.aux" 1764940173.91308 3950 7de296600d3118e46102ed4119bf1dab "pdflatex"
-  "main.bbl" 1764939752.61234 946 0c0d8f0efbef379bdc79693e8006b7e5 "bibtex main"
-  "main.out" 1764940173.91308 2099 751d475a551a589bf064e8615c9bc6be "pdflatex"
-  "main.tex" 1764940171.84681 21183 ce7127d599d054577c0ae299dd0b8714 ""
+  "main.aux" 1764953511.29691 4204 aa88c257c0c322477148c306da8bfc1c "pdflatex"
+  "main.bbl" 1764953508.91637 946 0c0d8f0efbef379bdc79693e8006b7e5 "bibtex main"
+  "main.out" 1764953511.29691 2099 751d475a551a589bf064e8615c9bc6be "pdflatex"
+  "main.tex" 1764953506.33973 21425 ab1953128b2c14a0df82e85df57101a5 ""
   (generated)
   "main.aux"
   "main.log"

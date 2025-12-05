@@ -170,6 +170,11 @@ INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 INPUT /usr/share/texlive/texmf-dist/tex/latex/psnfss/ts1ptm.fd
 INPUT /usr/share/texlive/texmf-dist/fonts/tfm/adobe/times/ptmr8c.tfm
+INPUT ../src/notebooks/data.png
+INPUT ../src/notebooks/data.png
+INPUT ../src/notebooks/data.png
+INPUT ../src/notebooks/data.png
+INPUT ../src/notebooks/data.png
 INPUT /usr/share/texlive/texmf-dist/fonts/vf/adobe/times/ptmr8c.vf
 INPUT ../src/notebooks/lstm_conformal_intervals.png
 INPUT ../src/notebooks/lstm_conformal_intervals.png

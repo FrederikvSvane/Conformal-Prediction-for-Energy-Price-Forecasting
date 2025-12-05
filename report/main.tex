@@ -110,6 +110,12 @@ to emphasize recent data over past data.
 We use hourly electricity market data from England spanning February 1, 2022 to February 1, 2023, comprising 8,760 observations. The target variable is the day-ahead spot price (GBP/MWh), while the raw features include wind power forecasts from a wind farm near London (MW), temperature forecasts (°C), historical normal temperatures (°C), and timestamps.
 
 This period coincides with the European energy crisis, characterized by significant price volatility and distribution shifts. These conditions stress-test conformal methods designed for non-stationary environments.
+\begin{figure}[H]
+\centering
+\includegraphics[width=\linewidth]{../src/notebooks/data.png}
+\caption{English electricity spot prices (GBP/MWh) of 2022.}
+\label{graph:data}
+\end{figure}
 
 \subsubsection{Feature engineering}
 
@@ -251,7 +257,9 @@ The primary limitation is base model quality. More training data spanning multip
 
 The ECI variants show limitations in this volatile setting. ECI-cutoff provides minimal improvement because the adaptive threshold offers little benefit with high volatility. ECI-integral achieves the worst coverage and has $O(t)$ computational complexity. We did not extensively tune its hyperparameters due to poor initial results, suggesting past errors may carry limited information for this data.
 
-The choice of shaping function affects performance. Both sigmoid and Gaussian functions dampen corrections for extreme deviations, but energy price spikes are meaningful events that should widen intervals. A linear shaping function would preserve corrections for large errors rather than dampening them. Finally, more sophisticated hyperparameter optimization such as Bayesian optimization could improve the coverage-width trade-off.
+The choice of shaping function affects performance. Both sigmoid and Gaussian functions dampen corrections for extreme deviations, but energy price spikes are meaningful events that should widen intervals. A linear shaping func-
+tion could perhaps preserve corrections for large errors rather than
+dampening them. But this would require more testing to confirm. Finally, more sophisticated hyperparameter optimization such as Bayesian optimization could improve the coverage-width trade-off.
 \section{Conclusion}
 \label{sec:conclusion}
 
